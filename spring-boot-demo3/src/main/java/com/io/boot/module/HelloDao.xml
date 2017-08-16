@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.io.boot.module.HelloDao">
+
+
+    <select id="listGetAll" resultType="map">
+        SELECT id		id,
+        name		name,
+        CountryCode		countryCode
+        FROM city
+    </select>
+
+
+</mapper>

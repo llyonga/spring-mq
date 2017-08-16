@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Title</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}"/>
+    <script th:href="@{/js/jquery-1.11.3.min.js}"/>
+    <script th:href="@{/js/bootstrap.min.js}"></script>
+</head>
+<body>
+<h5 th:text="${hello}"></h5><br/>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Code</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="lm : ${listMap}">
+            <td th:text="${lm.id}"></td>
+            <td th:text="${lm.name}"></td>
+            <td th:text="${lm.countryCode}"></td>
+        </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
