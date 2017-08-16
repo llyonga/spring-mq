@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--读取jms的配置文件-->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:mq.properties"></property>
+    </bean>
+
+    <!-- 配置JMS连接工厂，真正可以产生Connection的ConnectionFactory，由对应的JMS服务厂商提供 -->
+    <bean id="amqConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="failover:${jms.broker.url}" />
+    </bean>
+
+    <!--JmsTemplate每次发送都会创建新的connect，新的session，新的MessageProducter，这样效率较低。
+    Spring提供了一个org.springframework.jms.connection.SingleConnectionFactory，
+    每次都返回同一个connection，它会忽略close，所以connection会一直保持着。
+    Spring还提供了一个org.springframework.jms.connection.CachingConnectionFactory，
+    增加了对session的缓存功能，可以通过sessionCacheSize设置，但因为它继承自SingleConnectionFactory，
+    所以同样是一直使用同一connection，由此通过spring来管理真正的connection-->
+    <bean id="connectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+        <!-- 目标ConnectionFactory对应真实的可以产生JMS Connection的ConnectionFactory -->
+        <property name="targetConnectionFactory" ref="amqConnectionFactory"/>
+        <!--<constructor-arg ref="amqConnectionFactory" />-->
+        <!-- Session缓存数量 -->
+        <property name="sessionCacheSize" value="100" />
+    </bean>
+
+    <!-- 定义消息队列（Queue），这个是队列目的地，点对点的-->
+    <bean id="queueDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <!-- 设置消息队列的名字 -->
+        <!--<constructor-arg value="${jms.queue.name}"></constructor-arg>-->
+        <property name="physicalName" value="${jms.queue.send.name}"/>
+        <!--<constructor-arg>
+            <value></value>
+        </constructor-arg>-->
+    </bean>
+
+    <!-- 发送消息配置
+         配置JmsTemplate
+         使用Spring提供的JmsTemplate封装JMS的细节，简化代码开发，JmsTemplate支持发送和接收。
+         Spring提供的JMS工具类，它发送、接收消息。 -->
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="defaultDestination" ref="queueDestination" />
+        <property name="receiveTimeout" value="10000" />
+    </bean>
+
+    <!--queue消息生产者 -->
+    <!-- Message Sender Definition -->
+    <bean id="messageSender" class="com.io.ssm.module.mq.sender.MessageSender">
+        <constructor-arg ref="jmsTemplate" />
+    </bean>
+
+
+
+    <!-- 配置一个Listener来监听和处理当前的Message Queue -->
+
+    <!--queue消息消费者 -->
+    <!-- Message Receiver Definition -->
+    <bean id="messageReceiver" class="com.io.ssm.module.mq.receive.MessageReceiver" />
+
+    <bean class="org.springframework.jms.listener.SimpleMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory"/>
+        <property name="destinationName" value="${jms.queue.receive.name}"/>
+        <property name="messageListener" ref="messageReceiver"/>
+    </bean>
+
+</beans>
